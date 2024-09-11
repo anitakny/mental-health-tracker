@@ -7,7 +7,6 @@ from django.core import serializers
 # Create your views here.
 def show_main(request):
     mood_entries = MoodEntry.objects.all()
-
     context = {
         'name': 'Anita Khoirun Nisa',
         'class': 'PBP E',
