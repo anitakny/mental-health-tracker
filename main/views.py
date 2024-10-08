@@ -23,7 +23,7 @@ def show_main(request):
         'name': request.user.username,
         'class': 'PBP E',
         'npm': '2306152273',
-        'last_login': request.COOKIES['last_login'],
+        'last_login': request.COOKIES.get('last_login', 'Never logged in'),
     }
 
     return render(request, "main.html", context)
@@ -71,6 +71,7 @@ def register(request):
 def login_user(request):
     if request.method == 'POST':
         form = AuthenticationForm(data=request.POST)
+
         if form.is_valid():
             user = form.get_user()
             login(request, user)
@@ -81,22 +82,24 @@ def login_user(request):
             messages.error(request, "Invalid username or password. Please try again.")
     else:
         form = AuthenticationForm(request)
-    context = {'form': form}
-    return render(request, 'login.html', context)
+        context = {'form': form}
+        return render(request, 'login.html', context)
 
 def logout_user(request):
     logout(request)
-    return redirect('main:login')
+    response = HttpResponseRedirect(reverse('main:login'))
+    response.delete_cookie('last_login')
+    return response
 
 def edit_mood(request, id):
-    # Get mood entry berdasarkan id
+    # Get mood entry based on id
     mood = MoodEntry.objects.get(pk = id)
 
-    # Set mood entry sebagai instance dari form
+    # Set mood entry as an instance of the form
     form = MoodEntryForm(request.POST or None, instance=mood)
 
     if form.is_valid() and request.method == "POST":
-        # Simpan form dan kembali ke halaman awal
+        # Save form and return to home page
         form.save()
         return HttpResponseRedirect(reverse('main:show_main'))
 
@@ -104,11 +107,11 @@ def edit_mood(request, id):
     return render(request, "edit_mood.html", context)
 
 def delete_mood(request, id):
-    # Get mood berdasarkan id
+    # Get mood based on id
     mood = MoodEntry.objects.get(pk = id)
-    # Hapus mood
+    # Delete mood
     mood.delete()
-    # Kembali ke halaman awal
+    # Return to home page
     return HttpResponseRedirect(reverse('main:show_main'))
 
 @csrf_exempt
@@ -116,8 +119,6 @@ def delete_mood(request, id):
 def add_mood_entry_ajax(request):
     mood = strip_tags(request.POST.get("mood")) # strip HTML tags!
     feelings = strip_tags(request.POST.get("feelings")) # strip HTML tags!
-    mood = request.POST.get("mood")
-    feelings = request.POST.get("feelings")
     mood_intensity = request.POST.get("mood_intensity")
     user = request.user
 
